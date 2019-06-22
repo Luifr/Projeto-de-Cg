@@ -141,8 +141,7 @@ void CanvasOpenGL::mouseMoveEvent(QMouseEvent *event)
 }
 
 void CanvasOpenGL::mousePressEvent(QMouseEvent *event) {
-    qDebug("asd");
-    qDebug(draw ? "t" : "f");
+
     if(draw){ // if a polygon is drawn, dont add more points
         return;
     }

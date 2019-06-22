@@ -155,7 +155,7 @@ void MainWindow::on_toningValue_currentIndexChanged(int index)
 
 void MainWindow::on_clear_clicked()
 {
-
+    ui->canvasOpenGL->clearScreen();
 }
 
 void MainWindow::on_reset_clicked()
