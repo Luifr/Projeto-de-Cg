@@ -16,6 +16,9 @@
 #include <vector>
 #include <stdlib.h>
 #include <math.h>
+#include <map>
+#include <edge.h>
+#include <list>
 
 // Custom Structs
 #include "structs.h"
@@ -26,9 +29,16 @@ using namespace std;
 class CanvasOpenGL : public QOpenGLWidget
 {
 public:
-    CanvasOpenGL();
+    CanvasOpenGL(QWidget *parent);
+    ~CanvasOpenGL();
+    void clearScreen();
 
 private:
+
+    int r,g,b;
+    bool draw;
+    int radius;
+
     // VIEWING
     GLint height, width;
     GLdouble
@@ -44,20 +54,21 @@ private:
     // OBSERVER
     QVector3D *up, *eye, *center;
     GLfloat xRot, yRot, zRot;
-    QPoint lastPos;
+    QPoint first, last;
     void LookAt();
 
     // polygon
     PolygonS* currentPolygon;
     vector<PolygonS*> polygons;
+    std::map<int,std::list<Edge>> ET;
+    std::list<Edge> AET;
+    vector<QPoint> vertices;
 
     // SCANLINE
     void drawLines(vector<QVector3D> *vertices);
     void fillPoligon(PolygonS* polygon);
 
-    // ADT
-    vector<Edge*> edgeTable;
-    vector<GLint> activeEdgeList;
+
 
     // HELPERS
     const GLdouble pi = 3.1415926535897932384626433832795;

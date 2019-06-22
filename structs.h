@@ -6,14 +6,6 @@
 
 using namespace std;
 
-typedef struct Edge {
-    int yMax;
-    int x;
-    float slope;
-    int deltaX;
-    int deltaY;
-} Edge;
-
 typedef struct PolygonS {
     vector<float[3]> *vertices;
     float color[4];

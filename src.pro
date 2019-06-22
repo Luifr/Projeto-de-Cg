@@ -28,12 +28,14 @@ LIBS += -lopengl32
 SOURCES += \
         canvasopengl.cpp \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+        edge.cpp
 
 HEADERS += \
         canvasopengl.h \
         mainwindow.h \
-        structs.h
+        structs.h \
+        edge.h
 
 FORMS += \
         mainwindow.ui

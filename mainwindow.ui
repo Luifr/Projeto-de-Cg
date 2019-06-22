@@ -50,7 +50,7 @@
      <height>620</height>
     </size>
    </property>
-   <widget class="QOpenGLWidget" name="canvasOpenGL">
+   <widget class="CanvasOpenGL" name="canvasOpenGL">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -868,6 +868,13 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>CanvasOpenGL</class>
+   <extends>QOpenGLWidget</extends>
+   <header>canvasopengl.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
