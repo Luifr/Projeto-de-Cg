@@ -23,15 +23,32 @@
 // Custom Structs
 #include "structs.h"
 
+#include <QDebug>
+#include <QtGui>
 
 using namespace std;
 
 class CanvasOpenGL : public QOpenGLWidget
 {
+
 public:
     CanvasOpenGL(QWidget *parent);
     ~CanvasOpenGL();
+
+    void setvMax (GLdouble arg1);
+    void setvMin (GLdouble arg1);
+    void sethMax (GLdouble arg1);
+    void sethMin (GLdouble arg1);
+    void setFar (GLdouble arg1);
+    void setNear (GLdouble arg1);
+    void reset ();
+    void toggleProjection ();
+    void setFovY(GLdouble arg1);
     void clearScreen();
+
+    void setR(int r);
+    void setG(int g);
+    void setB(int b);
 
 private:
 
@@ -48,7 +65,6 @@ private:
         aspect, fovY;
     void setParameters();
     void resetParameters();
-    void toggleProjection ();
     void perspectiveGL();
 
     // OBSERVER
@@ -73,9 +89,15 @@ private:
     // HELPERS
     const GLdouble pi = 3.1415926535897932384626433832795;
     GLdouble euclidean (QVector3D, QVector3D);
-    void reset();
+    GLboolean isPerspective;
+
+    QPoint lastPos; // talvez tenha que tirar
+
+    GLfloat colors[6][3];
+    GLfloat faces[6][4][3];
 
 protected:
+
     // OpenGL
     void initializeGL();
     void resizeGL(GLint w, GLint h);

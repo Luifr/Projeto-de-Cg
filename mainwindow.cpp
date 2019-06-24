@@ -115,17 +115,17 @@ void MainWindow::on_isPerspective_stateChanged(int arg1)
 // DRAWING
 void MainWindow::on_drawingRValue_valueChanged(double arg1)
 {
-    (void) arg1;
+    this->ui->canvasOpenGL->setR((int)arg1*255);
 }
 
 void MainWindow::on_drawingGValue_valueChanged(double arg1)
 {
-    (void) arg1;
+    this->ui->canvasOpenGL->setG((int)arg1*255);
 }
 
 void MainWindow::on_drawingBValue_valueChanged(double arg1)
 {
-    (void) arg1;
+    this->ui->canvasOpenGL->setB((int)arg1*255);
 }
 
 void MainWindow::on_drawingZValue_valueChanged(double arg1)
