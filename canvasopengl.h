@@ -11,6 +11,7 @@
 #include <QPoint>
 #include <QVector3D>
 #include <QMatrix4x4>
+#include <QDebug>
 
 // C Libs
 #include <vector>
@@ -19,6 +20,8 @@
 #include <map>
 #include <edge.h>
 #include <list>
+#include <iostream>
+#include <fstream>
 
 // Custom Structs
 #include "structs.h"
@@ -35,6 +38,7 @@ public:
 
 private:
 
+    float heightmap[256][256];
     int r,g,b;
     bool draw;
     int radius;
@@ -50,6 +54,8 @@ private:
     void resetParameters();
     void toggleProjection ();
     void perspectiveGL();
+    void readInputFile();
+    void printHeightMap();
 
     // OBSERVER
     QVector3D *up, *eye, *center;
