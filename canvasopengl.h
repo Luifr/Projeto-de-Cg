@@ -78,7 +78,8 @@ private:
         hMin,   hMax,
         vMin,   vMax,
         nearV,   farV,
-        aspect, fovY;
+        aspect, fovY,
+        mNear, mFar;
     void setParameters();
     void resetParameters();
     void toggleProjection ();

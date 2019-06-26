@@ -102,14 +102,16 @@ Vector rotateInY(float angle, Vector vec, char direction){
 
 }
 //-------------------------------------------------------------------------------------------
-Point calculate(char direction, Vector oldVec){
+Point *calculate(char direction, Vector oldVec){
     Vector newVec;
-    Point p;
+    Point *p = (Point*) malloc(sizeof(Point));
 
     newVec = rotateInX((PI/2) - angles.x_axis, oldVec, direction);
     newVec = rotateInY((PI/2) - angles.y_axis, newVec, direction);
 
-    p.x = newVec.x; p.y = newVec.y; p.z = newVec.z;
+    p->x = newVec.x; p->y = newVec.y; p->z = newVec.z;
+
+    return p;
 }
 //-------------------------------------------------------------------------------------------
 Point* change(Point p1, Point p2, Point p3){
@@ -187,6 +189,7 @@ void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
                     v.y = scanLine;
                     v.z = 0;
                     //OPENGL
+                    cerr << "a " << changeBack(v).x;
                     this->pointsToPaint.push_back(changeBack(v));
 
                 }
@@ -275,11 +278,35 @@ CanvasOpenGL::~CanvasOpenGL()
 
 void CanvasOpenGL::setParameters()
 {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
 
+    if (0) {
+        this->perspectiveGL();
+    } else {
+        glOrtho(
+            this->hMin,
+            this->hMax,
+            this->vMin,
+            this->vMax,
+            this->mNear,
+            this->mFar
+        );
+    }
 }
 
 void CanvasOpenGL::resetParameters()
 {
+    this->hMin = -400;
+    this->hMax = 400;
+    this->vMin = -300;
+    this->vMax = 300;
+    this->mNear = -500.0;
+    this->mFar = 500.0;
+
+    this->xRot = 0.0;
+    this->yRot = 0.0;
+    this->zRot = 0.0;
 }
 
 void CanvasOpenGL::toggleProjection()
@@ -324,7 +351,7 @@ void CanvasOpenGL::initializeGL()
 
     //this->isPerspective = false;
 
-    this->aspect = this->width/this->height;
+    this->aspect = this->width/800;
 
     this->fovY = 100.0;
 
@@ -355,12 +382,20 @@ void CanvasOpenGL::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-    glPointSize(1.0);
+    glPointSize(10.0);
     glBegin(GL_POINTS);
+
+    glVertex3i(0, 0, 0);
+
+    cerr << "size: " << pointsToPaint.size();
 
     for (vector<Point>::iterator i = this->pointsToPaint.begin(); i != this->pointsToPaint.end(); i++) {
 
+        glColor3f(1.0, 1.0, 1.0);
+        cerr << "x: " << i->x << " | y: " << i->y << " | z: " << i->z;
+        glVertex3f(GLfloat(i->x), GLfloat(i->y), GLfloat(i->z));
     }
+
     glEnd();
 
 }
