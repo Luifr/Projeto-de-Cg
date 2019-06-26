@@ -122,7 +122,7 @@ Point* change(Point p1, Point p2, Point p3){
     new_p2 = calculate(0, v1);
     new_p3 = calculate(0, v2);
 
-    Point points[3];
+    Point* points = (Point*)malloc(3*sizeof(Point));
     points[0] = new_p1; points[1] = new_p2; points[2] = new_p3;
 
     return points;
@@ -213,9 +213,9 @@ CanvasOpenGL::CanvasOpenGL(QWidget *parent) : QOpenGLWidget(parent)
     this->r = 255;
     this->g = 255;
     this->b = 255;
-
     readInputFile();
     printHeightMap();
+    cerr << "fim3" << endl;
 }
 
 void CanvasOpenGL::printHeightMap(){
@@ -232,14 +232,17 @@ void CanvasOpenGL::printHeightMap(){
             p3.z = this->heightmap[i+1][j];
             points = change(p1,p2,p3);
             scanLine(points);
+            free(points);
         }
     }
+    cerr << "fim" << endl;
     this->update();
+    cerr << "fim2" << endl;
 }
 
 
 void CanvasOpenGL::readInputFile(){
-
+    cerr << "aa";
     string line;
     ifstream myfile("C:\\Users\\LuiRocha\\Desktop\\t2-cg\\heightmap.txt");
     if (myfile.is_open())
@@ -251,7 +254,6 @@ void CanvasOpenGL::readInputFile(){
             for(int i=0;i<255;i++){
                 this->heightmap[j][i] = std::stof (line,&sz);
                 line = line.substr(sz);
-                std::cerr << this->heightmap[j][i];
             }
             j++;
         }
@@ -339,9 +341,11 @@ void CanvasOpenGL::resizeGL(GLint w, GLint h)
 
 void CanvasOpenGL::paintGL()
 {
-    cerr << "a";
+    cerr << "paint" << endl;
 
     this->setParameters();
+
+    cerr << "paint2" << endl;
 
     glMatrixMode(GL_MODELVIEW);
 
