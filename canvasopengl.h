@@ -29,12 +29,41 @@
 
 using namespace std;
 
+typedef struct vecc{
+    float x;
+    float y;
+    float z;
+}Vector;
+
+typedef struct pointt{
+    float x;
+    float y;
+    float z;
+}Point;
+
+typedef struct planee{
+    float Xcoef;
+    float Ycoef;
+    float Zcoef;
+    float independentTerm;
+}Plane;
+
+//angle between normal and axis
+typedef struct ang{
+    float x_axis;
+    float y_axis;
+}Angles;
+
 class CanvasOpenGL : public QOpenGLWidget
 {
 public:
     CanvasOpenGL(QWidget *parent);
     ~CanvasOpenGL();
     void clearScreen();
+
+    void doScanLine(std::map<int,std::list<Edge>> ET);
+    void scanLine(Point points[3]);
+    vector<Point> pointsToPaint;
 
 private:
 

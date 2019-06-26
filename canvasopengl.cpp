@@ -2,37 +2,13 @@
 #include <cmath>
 #define PI 3.14159265
 
+
+
+//-------------------------------------------------------------------------------------------
+
 Angles angles; //global variable
 Vector v1, v2;
 Point originPoint;
-
-//-------------------------------------------------------------------------------------------
-typedef struct vecc{
-    float x;
-    float y;
-    float z;
-}Vector;
-
-typedef struct pointt{
-    float x;
-    float y;
-    float z;
-}Point;
-
-typedef struct planee{
-    float Xcoef;
-    float Ycoef;
-    float Zcoef;
-    float independentTerm;
-}Plane;
-
-//angle between normal and axis
-typedef struct ang{
-    float x_axis;
-    float y_axis;
-}Angles;
-
-
 
 //-------------------------------------------------------------------------------------------
  Vector getVector(Point p1, Point p2){
@@ -161,7 +137,7 @@ Point changeBack(Vector vec){
 }
 
 
-void doScanLine(std::map<int,std::list<Edge>> ET){
+void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
     std::list<Edge> AET;
     int scanLine = ET.begin()->first;
     int yMax = 0;
@@ -210,8 +186,9 @@ void doScanLine(std::map<int,std::list<Edge>> ET){
                     v.x = i;
                     v.y = scanLine;
                     v.z = 0;
-                    changeBack(v);
                     //OPENGL
+                    this->pointsToPaint.push_back(changeBack(v));
+
                 }
                 first = 0;
             }
@@ -219,11 +196,11 @@ void doScanLine(std::map<int,std::list<Edge>> ET){
     }
 }
 
-void scanLine(Point points[3]){
+void CanvasOpenGL::scanLine(Point points[3]){
     QPoint p1(points[0].x,points[0].y),p2(points[1].x,points[1].y),p3(points[2].x,points[2].y);
     Edge e1(p1,p2),e2(p2,p3),e3(p1,p3);
     std::map<int,std::list<Edge>> ET;
-    doScanLine(ET);
+    this->doScanLine(ET);
 }
 //-------------------------------------------------------------------------------------------
 
@@ -243,7 +220,7 @@ CanvasOpenGL::CanvasOpenGL(QWidget *parent) : QOpenGLWidget(parent)
 
 void CanvasOpenGL::printHeightMap(){
     Point p1,p2,p3;
-    Point points[3];
+    Point *points;
     for(int i=0;i<254;i++){
         for(int j=0;j<254;j++){
             p1.x = p2.x = p3.x = i;
@@ -257,6 +234,7 @@ void CanvasOpenGL::printHeightMap(){
             scanLine(points);
         }
     }
+    this->update();
 }
 
 
@@ -283,10 +261,19 @@ void CanvasOpenGL::readInputFile(){
 
 CanvasOpenGL::~CanvasOpenGL()
 {
+    qDebug("esd");
+    this->draw = false;
+    this->radius = 12;
+    this->width = 800;
+    this->height = 600;
+    this->r = 255;
+    this->g = 255;
+    this->b = 255;
 }
 
 void CanvasOpenGL::setParameters()
 {
+
 }
 
 void CanvasOpenGL::resetParameters()
@@ -329,6 +316,20 @@ void CanvasOpenGL::reset()
 
 void CanvasOpenGL::initializeGL()
 {
+    glEnable(GL_DEPTH_TEST);
+
+    //glEnable(GL_PROGRAM_POINT_SIZE);
+
+    //this->isPerspective = false;
+
+    this->aspect = this->width/this->height;
+
+    this->fovY = 100.0;
+
+    this->resetParameters();
+
+    glViewport(0, 0, this->width, this->height);
+
 }
 void CanvasOpenGL::resizeGL(GLint w, GLint h)
 {
@@ -338,78 +339,26 @@ void CanvasOpenGL::resizeGL(GLint w, GLint h)
 
 void CanvasOpenGL::paintGL()
 {
-    //create a QPainter and pass a pointer to the device.
-    //A paint device can be a QWidget, a QPixmap or a QImage
-    QPainter painter(this);
-    QPen myPen(1); // 1 px
+    cerr << "a";
 
-    QColor color(this->r, this->g, this->b); // WHITE
-    myPen.setColor(color);
+    this->setParameters();
 
-    painter.setPen(myPen);
+    glMatrixMode(GL_MODELVIEW);
 
-    QPoint last; // draw edge
-    for (vector<QPoint>::iterator i = this->vertices.begin(); i != this->vertices.end(); i++)
-    {
-        painter.drawPoint(*i);
-        if (last.isNull() == false)
-        {
-            painter.drawLine(*i, last);
-        }
-        last = *i;
+    glLoadIdentity();
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+    glPointSize(1.0);
+    glBegin(GL_POINTS);
+
+    for (vector<Point>::iterator i = this->pointsToPaint.begin(); i != this->pointsToPaint.end(); i++) {
+
     }
+    glEnd();
 
-    if (this->draw)
-    { // if polygon is finished, paint it
-        int scanLine = this->ET.begin()->first;
-        int yMax = 0;
-        for (std::map<int, list<Edge>>::iterator it = this->ET.begin(); it != this->ET.end(); it++)
-        {
-            for (list<Edge>::iterator iterator = it->second.begin(), end = it->second.end(); iterator != end; ++iterator)
-            {
-                if (iterator->yMax > yMax)
-                {
-                    yMax = iterator->yMax;
-                }
-            }
-        }
-
-        for (; scanLine < yMax; scanLine++)
-        { // scanlines
-            if (this->ET.find(scanLine) != this->ET.end())
-            {
-                this->AET.splice(this->AET.end(), this->ET.find(scanLine)->second);
-            }
-            for (std::list<Edge>::iterator iterator = this->AET.begin(), end = this->AET.end(); iterator != end; ++iterator)
-            {
-                if (iterator->yMax == scanLine)
-                {
-                    this->AET.remove(*iterator);
-                }
-                else
-                {
-                    iterator->x += iterator->xInc;
-                }
-            }
-            this->AET.sort([](Edge lhs, Edge rhs) { return lhs.x < rhs.x; });
-            float first = 0;
-            for (std::list<Edge>::const_iterator iterator = this->AET.begin(), end = this->AET.end(); iterator != end; ++iterator)
-            {
-                if (int(first) == 0)
-                {
-                    first = iterator->x;
-                }
-                else
-                {
-                    for (int i = int(ceil(first)); i < floor(iterator->x); i++)
-                    { // fill the scanline
-                        painter.drawPoint(i, scanLine);
-                    }
-                    first = 0;
-                }
-            }
-        }
-    }
 }
 
 void CanvasOpenGL::mouseMoveEvent(QMouseEvent *event)
@@ -419,48 +368,6 @@ void CanvasOpenGL::mouseMoveEvent(QMouseEvent *event)
 
 void CanvasOpenGL::mousePressEvent(QMouseEvent *event)
 {
-    if (draw)
-    { // if a polygon is drawn, dont add more points
-        return;
-    }
-
-    QPoint pos = event->pos();
-
-    if (this->first.isNull())
-    {
-        this->first = pos;
-    }
-    else
-    {
-        if (std::abs(pos.x() - this->first.x()) < this->radius && std::abs(pos.y() - this->first.y()) < this->radius)
-        {
-            pos = this->first;
-            this->draw = true;
-        }
-    }
-
-    this->vertices.push_back(pos);
-
-    if (!this->last.isNull() && pos.y() != this->last.y())
-    { // se esse nao for o primeiro ponto, e nao for uma reta horizontal
-        int yMin = min(this->last.y(), pos.y());
-        Edge e(pos, this->last);
-
-        std::map<int, list<Edge>>::iterator it = this->ET.find(yMin); // adiciona na ET
-        if (it == this->ET.end())
-        {
-            list<Edge> l;
-            l.push_front(e);
-            this->ET[yMin] = l;
-        }
-        else
-        {
-            it->second.push_front(e);
-        }
-    }
-
-    this->last = pos;
-
     this->update();
 }
 
