@@ -7,31 +7,31 @@
 //-------------------------------------------------------------------------------------------
 
 Angles angles; //global variable
-Vector v1, v2;
+Vector *v1, *v2;
 Point originPoint;
 
 //-------------------------------------------------------------------------------------------
- Vector getVector(Point p1, Point p2){
-    Vector v1;
-    v1.x = p2.x - p1.x;
-    v1.y = p2.y - p1.y;
-    v1.z = p2.z - p1.z;
+ Vector* getVector(Point p1, Point p2){
+    Vector* v1 = (Vector*)malloc(sizeof(Vector));
+    v1->x = p2.x - p1.x;
+    v1->y = p2.y - p1.y;
+    v1->z = p2.z - p1.z;
     return v1;
 
 }
 //-------------------------------------------------------------------------------------------
-Plane planeEquation(Vector a, Vector b, Point planPoint){
+Plane* planeEquation(Vector *a, Vector *b, Point planPoint){
     //making cross product
     // | i  j  k  |
     // | xa ya za |
     // | xb yb zb |
 
-    Plane p;
-    p.Xcoef = ( (a.y * b.z) - (a.z * b.y) ); // X coeficient (i)
-    p.Ycoef = ( (a.z * b.x) - (a.x * b.z) ); // Y coeficient (j)
-    p.Zcoef = ( (a.x * b.y) - (a.y * b.x) ); // Z coeficient (k)
+    Plane* p = (Plane*)malloc(sizeof(Plane));
+    p->Xcoef = ( (a->y * b->z) - (a->z * b->y) ); // X coeficient (i)
+    p->Ycoef = ( (a->z * b->x) - (a->x * b->z) ); // Y coeficient (j)
+    p->Zcoef = ( (a->x * b->y) - (a->y * b->x) ); // Z coeficient (k)
 
-    p.independentTerm = (-1)*(p.Xcoef*planPoint.x + p.Ycoef*planPoint.y + p.Zcoef*planPoint.z);
+    p->independentTerm = (-1)*(p->Xcoef*planPoint.x + p->Ycoef*planPoint.y + p->Zcoef*planPoint.z);
 
     return p;
 }
@@ -51,26 +51,26 @@ float getAngle(Vector normal, Vector axis){
 //-------------------------------------------------------------------------------------------
 //PARAMS: angle:        angle to rotate
 //         vec:         coordinates of rotated vector in space
-//         direction:   0: sentido horario, 1: sentido anti horario
+//         direction:   0: change (antihorario), 1: unchange (horario)
 
-Vector rotateInX(float angle, Vector vec, char direction){
-    Vector newVec;
+Vector* rotateInX(float angle, Vector vec, char direction){
+    Vector* newVec = (Vector*) malloc(sizeof(Vector));
 
     //open rotation matrix;
-    newVec.x = vec.x;
-    newVec.y = direction == 0? vec.y*cos(angle)-vec.z*sin(angle) : vec.y*cos(angle)+vec.z*sin(angle);
-    newVec.z = direction == 0? vec.y*sin(angle) + vec.z*cos(angle) : (-1)*vec.y*sin(angle) + vec.z*cos(angle);
+    newVec->x = vec.x;
+    newVec->y = direction == 0? vec.y*cos(angle) - vec.z*sin(angle) : vec.y*cos(angle) + vec.z*sin(angle);
+    newVec->z = direction == 0? vec.y*sin(angle) + vec.z*cos(angle) : (-1)*vec.y*sin(angle) + vec.z*cos(angle);
 
     return newVec;
 }
 //-------------------------------------------------------------------------------------------
-//rotacao no sentido anti-horario
-Vector rotateInY(float angle, Vector vec, char direction){
-    Vector newVec;
+ //direction:   0: change (horario), 1: unchange (antihorario)
+Vector* rotateInY(float angle, Vector vec, char direction){
+    Vector* newVec = (Vector*) malloc(sizeof(Vector));
 
-    newVec.x = direction == 0? vec.x*cos(angle) - vec.z*sin(angle) : vec.x*cos(angle) + vec.z*sin(angle);
-    newVec.y = vec.y;
-    newVec.z = direction == 0? vec.x*sin(angle) + vec.z*cos(angle) : (-1)*vec.x*sin(angle) + vec.z*cos(angle);
+    newVec->x = direction == 0? vec.x*cos(angle) + vec.z*sin(angle) : vec.x*cos(angle) - vec.z*sin(angle) ;
+    newVec->y = vec.y;
+    newVec->z = direction == 0? (-1)*vec.x*sin(angle) + vec.z*cos(angle) :  vec.x*sin(angle) + vec.z*cos(angle);
 
     return newVec;
 }
@@ -82,11 +82,11 @@ Vector rotateInY(float angle, Vector vec, char direction){
     v2 = getVector(p1, p3);
 
     //plan which contains all 3 point. (last argument could be p1, p2 or p3 - Any point in plane)
-    Plane plane = planeEquation(v1, v2, p1);
+    Plane* plane = planeEquation(v1, v2, p1);
 
     //get normal od both plenes:
     Vector normal;
-    normal.x = plane.Xcoef; normal.y = plane.Ycoef; normal.z = plane.Ycoef;
+    normal.x = plane->Xcoef; normal.y = plane->Ycoef; normal.z = plane->Ycoef;
 
     //***********************************************************
     //to get the angle between 'normal' and 'x-axis', rotate in Y
@@ -102,14 +102,14 @@ Vector rotateInY(float angle, Vector vec, char direction){
 
 }
 //-------------------------------------------------------------------------------------------
-Point *calculate(char direction, Vector oldVec){
-    Vector newVec;
+Point* calculate(char direction, Vector oldVec){
+    Vector* newVec;
     Point *p = (Point*) malloc(sizeof(Point));
 
     newVec = rotateInX((PI/2) - angles.x_axis, oldVec, direction);
-    newVec = rotateInY((PI/2) - angles.y_axis, newVec, direction);
+    newVec = rotateInY((PI/2) - angles.y_axis, *newVec, direction);
 
-    p->x = newVec.x; p->y = newVec.y; p->z = newVec.z;
+    p->x = newVec->x; p->y = newVec->y; p->z = newVec->z;
 
     return p;
 }
@@ -119,22 +119,24 @@ Point* change(Point p1, Point p2, Point p3){
     findRotatioAngles(p1,p2,p3);
     originPoint = p1;
 
-    Point new_p1, new_p2, new_p3;
-    new_p1.x = 0; new_p1.y = 0; new_p1.z = 0;
-    new_p2 = calculate(0, v1);
-    new_p3 = calculate(0, v2);
+    Point *new_p1;
+    Point *new_p2;
+    Point *new_p3;
+    new_p2 = calculate(0, *v1);
+    new_p3 = calculate(0, *v2);
+    new_p1->x = 0; new_p1->y = 0; new_p1->z = 0;
 
     Point* points = (Point*)malloc(3*sizeof(Point));
-    points[0] = new_p1; points[1] = new_p2; points[2] = new_p3;
+    points[0] = *new_p1; points[1] = *new_p2; points[2] = *new_p3;
 
     return points;
 }
 //-------------------------------------------------------------------------------------------
-Point changeBack(Vector vec){
-    Point newPoint = calculate(1, vec);
-    newPoint.x += originPoint.x;
-    newPoint.y += originPoint.y;
-    newPoint.z += originPoint.z;
+Point* changeBack(Vector vec){
+    Point* newPoint = calculate(1, vec);
+    newPoint->x += originPoint.x;
+    newPoint->y += originPoint.y;
+    newPoint->z += originPoint.z;
     return newPoint;
 }
 
@@ -189,8 +191,8 @@ void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
                     v.y = scanLine;
                     v.z = 0;
                     //OPENGL
-                    cerr << "a " << changeBack(v).x;
-                    this->pointsToPaint.push_back(changeBack(v));
+                    //cerr << "a " << changeBack(v).x;
+                    this->pointsToPaint.push_back(*changeBack(v));
 
                 }
                 first = 0;
