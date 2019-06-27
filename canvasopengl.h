@@ -41,19 +41,6 @@ typedef struct pointt{
     float z;
 }Point;
 
-typedef struct planee{
-    float Xcoef;
-    float Ycoef;
-    float Zcoef;
-    float independentTerm;
-}Plane;
-
-//angle between normal and axis
-typedef struct ang{
-    float x_axis;
-    float y_axis;
-}Angles;
-
 class CanvasOpenGL : public QOpenGLWidget
 {
 public:
@@ -62,7 +49,7 @@ public:
     void clearScreen();
 
     void doScanLine(std::map<int,std::list<Edge>> ET);
-    void scanLine(Point points[3]);
+    void scanLine(Point **points);
     vector<Point> pointsToPaint;
 
 private:
@@ -80,6 +67,7 @@ private:
         nearV,   farV,
         aspect, fovY,
         mNear, mFar;
+    GLboolean isPerspective;
     void setParameters();
     void resetParameters();
     void toggleProjection ();

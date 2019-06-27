@@ -1,14 +1,12 @@
 #include "canvasopengl.h"
 #include <cmath>
-#define PI 3.14159265
 
 
-
-//-------------------------------------------------------------------------------------------
-
-Angles angles; //global variable
-Vector *v1, *v2;
+double angle; //global variable
+Vector *v1, *v2, *versor, *normal;
 Point originPoint;
+double a, b, c, d, e, f, g, h, i;
+char inv_normal = 0;
 
 //-------------------------------------------------------------------------------------------
  Vector* getVector(Point p1, Point p2){
@@ -17,27 +15,24 @@ Point originPoint;
     v1->y = p2.y - p1.y;
     v1->z = p2.z - p1.z;
     return v1;
-
 }
 //-------------------------------------------------------------------------------------------
-Plane* planeEquation(Vector *a, Vector *b, Point planPoint){
+Vector* planeEquation(Vector *a, Vector *b){
     //making cross product
     // | i  j  k  |
     // | xa ya za |
     // | xb yb zb |
 
-    Plane* p = (Plane*)malloc(sizeof(Plane));
-    p->Xcoef = ( (a->y * b->z) - (a->z * b->y) ); // X coeficient (i)
-    p->Ycoef = ( (a->z * b->x) - (a->x * b->z) ); // Y coeficient (j)
-    p->Zcoef = ( (a->x * b->y) - (a->y * b->x) ); // Z coeficient (k)
-
-    p->independentTerm = (-1)*(p->Xcoef*planPoint.x + p->Ycoef*planPoint.y + p->Zcoef*planPoint.z);
+    Vector* p = (Vector*)malloc(sizeof(Vector));
+    p->x = ( (a->y * b->z) - (a->z * b->y) ); // X coeficient (i)
+    p->y = ( (a->z * b->x) - (a->x * b->z) ); // Y coeficient (j)
+    p->z = ( (a->x * b->y) - (a->y * b->x) ); // Z coeficient (k)
 
     return p;
 }
 //-------------------------------------------------------------------------------------------
-float getAngle(Vector normal, Vector axis){
-    float cosine, angle, dotProduct, moduleNormal, moduleAxis;
+double getAngle(Vector normal, Vector axis){ //zaxis
+    double cosine, angle, dotProduct, moduleNormal, moduleAxis;
 
     dotProduct = normal.x*axis.x + normal.y*axis.y + normal.z*axis.z;
     moduleNormal = sqrt(pow(normal.x, 2)+pow(normal.y, 2)+pow(normal.z, 2));
@@ -45,105 +40,122 @@ float getAngle(Vector normal, Vector axis){
 
     cosine = dotProduct/(moduleNormal*moduleAxis);
     angle = acos(cosine);
+
     return angle; //in radians
-
 }
 //-------------------------------------------------------------------------------------------
-//PARAMS: angle:        angle to rotate
-//         vec:         coordinates of rotated vector in space
-//         direction:   0: change (antihorario), 1: unchange (horario)
+void setMatrix(double angle, Vector versor){
+    double co = cos(angle);
+    double s = sin(angle);
 
-Vector* rotateInX(float angle, Vector vec, char direction){
-    Vector* newVec = (Vector*) malloc(sizeof(Vector));
+    if(versor.x == 0 && versor.y == 0 && versor.z == 0){
+        a=b=c=d=e=f=g=h=i=0;
+        return;
+    }
 
+    double normalize = sqrt(pow(versor.x, 2)+ pow(versor.y , 2)+ pow(versor.z, 2));
+    double x = versor.x/normalize, y = versor.y/normalize, z = versor.z/ normalize;
+
+    a = pow(x, 2)*(1-co) + co;    b = x*y*(1-co)-(z*s);        c = x*z*(1-co)+(y*s);
+    d = y*x*(1-co) + (z*s);       e = pow(y, 2)*(1-co) + co;   f = y*z*(1-co) - (x*s);
+    g = x*z*(1-co) - (y*s);       h = y*z*(1-co) + (x*s);      i = pow(z, 2)*(1-co) + co;
+}
+//-------------------------------------------------------------------------------------------
+Point* rotateToZ(Point point){
+    Point* newPoint = (Point*) malloc(sizeof(Point));
     //open rotation matrix;
-    newVec->x = vec.x;
-    newVec->y = direction == 0? vec.y*cos(angle) - vec.z*sin(angle) : vec.y*cos(angle) + vec.z*sin(angle);
-    newVec->z = direction == 0? vec.y*sin(angle) + vec.z*cos(angle) : (-1)*vec.y*sin(angle) + vec.z*cos(angle);
+    cerr << g << " " << e << endl;
+    newPoint->x = a*point.x + b*point.y + c*point.z;
+    newPoint->y = d*point.x + e*point.y + f*point.z;
+    newPoint->z = g*point.x + h*point.y + i*point.z;
+    cerr << newPoint->y << endl;
 
-    return newVec;
+    return newPoint;
 }
 //-------------------------------------------------------------------------------------------
- //direction:   0: change (horario), 1: unchange (antihorario)
-Vector* rotateInY(float angle, Vector vec, char direction){
-    Vector* newVec = (Vector*) malloc(sizeof(Vector));
-
-    newVec->x = direction == 0? vec.x*cos(angle) + vec.z*sin(angle) : vec.x*cos(angle) - vec.z*sin(angle) ;
-    newVec->y = vec.y;
-    newVec->z = direction == 0? (-1)*vec.x*sin(angle) + vec.z*cos(angle) :  vec.x*sin(angle) + vec.z*cos(angle);
-
-    return newVec;
+Vector* invertNormal(){
+        normal->x = -normal->x;
+        normal->y = -normal->y;
+        normal->z = -normal->z;
+        inv_normal = inv_normal==0? 1 : 0;
 }
 //-------------------------------------------------------------------------------------------
  void findRotatioAngles(Point p1, Point p2, Point p3){
-
     //getting vectors (already with origins in (0,0,0) ):
     v1 = getVector(p1, p2);
     v2 = getVector(p1, p3);
 
     //plan which contains all 3 point. (last argument could be p1, p2 or p3 - Any point in plane)
-    Plane* plane = planeEquation(v1, v2, p1);
+    //already gets normal:
+    normal = planeEquation(v1, v2);
+    if(normal->z < 0) invertNormal();
 
-    //get normal od both plenes:
-    Vector normal;
-    normal.x = plane->Xcoef; normal.y = plane->Ycoef; normal.z = plane->Ycoef;
+    //eixo z:
+    Vector z_axis;
+    z_axis.x = 0; z_axis.y = 0; z_axis.z = 1;
 
-    //***********************************************************
-    //to get the angle between 'normal' and 'x-axis', rotate in Y
-    //to get the angle between 'normal' and 'y-axis', rotate in X
-    Vector x_axis, y_axis;
-    x_axis.x = 1; x_axis.y = 0; x_axis.z = 0;
-    y_axis.x = 0; y_axis.y = 1; y_axis.z = 0;
-
-    //calculate angle between normal and x_axis and y_axis;
-    angles.x_axis = getAngle(normal, x_axis);
-    angles.y_axis = getAngle(normal, y_axis);
+    //angulo entre a normal e o eixo z:
+    angle = getAngle(*normal, z_axis);
+    //achando o versor entre a normal e o eixo z:
+    versor = planeEquation(normal, &z_axis);
 
 
 }
 //-------------------------------------------------------------------------------------------
-Point* calculate(char direction, Vector oldVec){
-    Vector* newVec;
-    Point *p = (Point*) malloc(sizeof(Point));
-
-    newVec = rotateInX((PI/2) - angles.x_axis, oldVec, direction);
-    newVec = rotateInY((PI/2) - angles.y_axis, *newVec, direction);
-
-    p->x = newVec->x; p->y = newVec->y; p->z = newVec->z;
-
-    return p;
-}
-//-------------------------------------------------------------------------------------------
-Point* change(Point p1, Point p2, Point p3){
-
+Point** change(Point p1, Point p2, Point p3){
     findRotatioAngles(p1,p2,p3);
     originPoint = p1;
+    Point** newPoints = (Point**)malloc(3*sizeof(Point*));
 
-    Point *new_p1;
-    Point *new_p2;
-    Point *new_p3;
-    new_p2 = calculate(0, *v1);
-    new_p3 = calculate(0, *v2);
-    new_p1->x = 0; new_p1->y = 0; new_p1->z = 0;
+    //setando a matriz de rotação:
 
-    Point* points = (Point*)malloc(3*sizeof(Point));
-    points[0] = *new_p1; points[1] = *new_p2; points[2] = *new_p3;
+    setMatrix(angle, *versor);
 
-    return points;
+    //rotacionando os 3 pontos em Z:
+    Point p1_new, p2_new, p3_new;
+    p1_new.x = 0; p1_new.y = 0; p1_new.z = 0;
+    p2_new.x = v1->x; p2_new.y = v1->y; p2_new.z = v1->z;
+    p3_new.x = v2->x; p3_new.y = v2->y; p3_new.z = v2->z;
+
+    //cerr << p2_new.x << " " << p2_new.y << endl;
+
+    newPoints[0] = rotateToZ(p1_new);
+    newPoints[1] = rotateToZ(p2_new);
+    newPoints[2] = rotateToZ(p3_new);
+
+    return newPoints;
 }
 //-------------------------------------------------------------------------------------------
-Point* changeBack(Vector vec){
-    Point* newPoint = calculate(1, vec);
+Point* changeBack(Point p){
+    Point* newPoint = (Point*)malloc(sizeof(Point));
+
+    //setando a matriz de rotação (desrotacionar oq foi rotacionado):
+    Vector* invertedVersor = (Vector*)malloc(sizeof(Vector));
+    invertedVersor->x = versor->x;//  |
+    invertedVersor->y = versor->y;//  |--> invertando (normal X z-axis)
+    invertedVersor->z = versor->z;//  |
+
+    setMatrix(-angle, *invertedVersor);
+    //rotacionando o ponto em Z:
+    newPoint = rotateToZ(p);
+
     newPoint->x += originPoint.x;
     newPoint->y += originPoint.y;
     newPoint->z += originPoint.z;
+
+    free(v1);
+    free(v2);
+
     return newPoint;
 }
 
+//////////////////////////////////////////////////////////////////////////////
 
 void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
     std::list<Edge> AET;
     int scanLine = ET.begin()->first;
+    //cerr << scanLine << endl;
+    return;
     int yMax = 0;
     for (std::map<int, list<Edge>>::iterator it = ET.begin(); it != ET.end(); it++)
     {
@@ -155,9 +167,9 @@ void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
             }
         }
     }
-
     for (; scanLine < yMax; scanLine++)
     { // scanlines
+        //cerr << scanLine << " " << yMax << endl;
         if (ET.find(scanLine) != ET.end())
         {
             AET.splice(AET.end(), ET.find(scanLine)->second);
@@ -186,12 +198,11 @@ void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
                 for (int i = int(ceil(first)); i < floor(iterator->x); i++)
                 { // fill the scanline
                     //painter.drawPoint(i, scanLine);
-                    Vector v;
+                    Point v;
                     v.x = i;
                     v.y = scanLine;
                     v.z = 0;
                     //OPENGL
-                    //cerr << "a " << changeBack(v).x;
                     this->pointsToPaint.push_back(*changeBack(v));
 
                 }
@@ -201,10 +212,45 @@ void CanvasOpenGL::doScanLine(std::map<int,std::list<Edge>> ET){
     }
 }
 
-void CanvasOpenGL::scanLine(Point points[3]){
-    QPoint p1(points[0].x,points[0].y),p2(points[1].x,points[1].y),p3(points[2].x,points[2].y);
+void CanvasOpenGL::scanLine(Point** points){
+    QPoint p1(points[0]->x,points[0]->y),p2(points[1]->x,points[1]->y),p3(points[2]->x,points[2]->y);
+    int yMin1 = min(p1.y(),p2.y()),yMin2 = min(p3.y(),p2.y()),yMin3 = min(p1.y(),p3.y());
     Edge e1(p1,p2),e2(p2,p3),e3(p1,p3);
     std::map<int,std::list<Edge>> ET;
+    list<Edge> l1,l2,l3;
+    l1.push_front(e1);
+    //cerr << points[1]->x << " " << points[1]->y << " " << points[2]->x << " " << endl;
+    return;
+    if(yMin1 == yMin2){ // 1 = 2 = 3, 1 = 2, 1 = 3, 2 = 3, != ,
+        l1.push_front(e2);
+        if(yMin3 == yMin1){
+            l1.push_front(e3);
+        }
+        else{
+            l3.push_front(e3);
+            ET[yMin3] = l3;
+        }
+    }
+    else if(yMin2 == yMin3){
+        l2.push_front(e2);
+        l2.push_front(e3);
+        ET[yMin2] = l2;
+    }
+    else if(yMin1 == yMin3){
+        l1.push_front(e3);
+        l2.push_front(e2);
+        ET[yMin2] = l2;
+    }
+    else{
+        l2.push_front(e2);
+        l3.push_front(e3);
+        ET[yMin2] = l2;
+        ET[yMin3] = l3;
+    }
+
+
+    ET[yMin1] = l1;
+
     this->doScanLine(ET);
 }
 //-------------------------------------------------------------------------------------------
@@ -213,6 +259,8 @@ void CanvasOpenGL::scanLine(Point points[3]){
 
 CanvasOpenGL::CanvasOpenGL(QWidget *parent) : QOpenGLWidget(parent)
 {
+    this->width = 800;
+    this->height = 600;
     this->draw = false;
     this->radius = 12;
     this->r = 255;
@@ -220,34 +268,42 @@ CanvasOpenGL::CanvasOpenGL(QWidget *parent) : QOpenGLWidget(parent)
     this->b = 255;
     readInputFile();
     printHeightMap();
-    cerr << "fim3" << endl;
 }
 
 void CanvasOpenGL::printHeightMap(){
-    Point p1,p2,p3;
-    Point *points;
+    Point p1,p2,p3,p4;
+    Point **points;
     for(int i=0;i<254;i++){
         for(int j=0;j<254;j++){
-            p1.x = p2.x = p3.x = i;
-            p1.y = p3.y = p2.y = j;
+            p1.x = p2.x = p3.x = p4.x = i;
+            p1.y = p3.y = p2.y = p4.y = j;
             p3.y++;
             p2.x++;
+            p4.y++;
+            p4.x++;
             p1.z = this->heightmap[i][j];
             p2.z = this->heightmap[i][j+1];
             p3.z = this->heightmap[i+1][j];
+            p4.z = this->heightmap[i+1][j+1];
             points = change(p1,p2,p3);
             scanLine(points);
+            free(points[0]);
+            free(points[1]);
+            free(points[2]);
+            free(points);
+            points = change(p2,p3,p4);
+            scanLine(points);
+            free(points[0]);
+            free(points[1]);
+            free(points[2]);
             free(points);
         }
     }
-    cerr << "fim" << endl;
     this->update();
-    cerr << "fim2" << endl;
 }
 
 
 void CanvasOpenGL::readInputFile(){
-    cerr << "aa";
     string line;
     ifstream myfile("C:\\Users\\LuiRocha\\Desktop\\t2-cg\\heightmap.txt");
     if (myfile.is_open())
@@ -268,14 +324,7 @@ void CanvasOpenGL::readInputFile(){
 
 CanvasOpenGL::~CanvasOpenGL()
 {
-    qDebug("esd");
-    this->draw = false;
-    this->radius = 12;
-    this->width = 800;
-    this->height = 600;
-    this->r = 255;
-    this->g = 255;
-    this->b = 255;
+
 }
 
 void CanvasOpenGL::setParameters()
@@ -283,7 +332,7 @@ void CanvasOpenGL::setParameters()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    if (0) {
+    if (this->isPerspective) {
         this->perspectiveGL();
     } else {
         glOrtho(
@@ -291,8 +340,8 @@ void CanvasOpenGL::setParameters()
             this->hMax,
             this->vMin,
             this->vMax,
-            this->mNear,
-            this->mFar
+            this->nearV,
+            this->farV
         );
     }
 }
@@ -317,6 +366,12 @@ void CanvasOpenGL::toggleProjection()
 
 void CanvasOpenGL::perspectiveGL()
 {
+    GLdouble fW, fH;
+
+    fH = tan(this->fovY / 360.0 * this->pi) * this->nearV;
+    fW = fH * this->aspect;
+
+    glFrustum(-fW, fW, -fH, fH, this->nearV, this->farV);
 }
 
 void CanvasOpenGL::LookAt()
@@ -349,11 +404,9 @@ void CanvasOpenGL::initializeGL()
 {
     glEnable(GL_DEPTH_TEST);
 
-    //glEnable(GL_PROGRAM_POINT_SIZE);
+    this->isPerspective = false;
 
-    //this->isPerspective = false;
-
-    this->aspect = this->width/800;
+    this->aspect = this->width/this->height;
 
     this->fovY = 100.0;
 
@@ -370,11 +423,7 @@ void CanvasOpenGL::resizeGL(GLint w, GLint h)
 
 void CanvasOpenGL::paintGL()
 {
-    cerr << "paint" << endl;
-
     this->setParameters();
-
-    cerr << "paint2" << endl;
 
     glMatrixMode(GL_MODELVIEW);
 
@@ -389,16 +438,14 @@ void CanvasOpenGL::paintGL()
 
     glVertex3i(0, 0, 0);
 
-    cerr << "size: " << pointsToPaint.size();
-
     for (vector<Point>::iterator i = this->pointsToPaint.begin(); i != this->pointsToPaint.end(); i++) {
-
-        glColor3f(1.0, 1.0, 1.0);
-        cerr << "x: " << i->x << " | y: " << i->y << " | z: " << i->z;
+        glColor3f(i->z, 0.0f, 1.0-i->z);
         glVertex3f(GLfloat(i->x), GLfloat(i->y), GLfloat(i->z));
     }
 
     glEnd();
+
+    glFlush();
 
 }
 
@@ -409,7 +456,7 @@ void CanvasOpenGL::mouseMoveEvent(QMouseEvent *event)
 
 void CanvasOpenGL::mousePressEvent(QMouseEvent *event)
 {
-    this->update();
+    //this->update();
 }
 
 void CanvasOpenGL::wheelEvent(QWheelEvent *event)
